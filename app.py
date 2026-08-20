@@ -33,24 +33,21 @@ def webhook():
     try:
         message = data["entry"][0]["changes"][0]["value"]["messages"][0]
 
-        if message["type"] == "text":
-            user_phone = message["from"]
-            text = message["text"]["body"].strip().lower()
+        if message.get("type") != "text":
+            return "OK", 200
 
-            if text in ["такси", "taxi", "привет", "здравствуйте", "здравствуй"]:
-                reply = (
-                    "🚕 Добро пожаловать в TeZgo Taxi!\n\n"
-                    "Чтобы заказать такси, напишите:\n"
-                    "📍 Откуда вас забрать?\n"
-                    "📍 Куда едем?"
-                )
-            else:
-                reply = (
-                    "🚕 TeZgo Taxi\n\n"
-                    "Чтобы заказать такси, напишите «Такси»."
-                )
+        from_number = message["from"]
+        text = message["text"]["body"].strip()
 
-            send_message(user_phone, reply)
+        reply = (
+            "🚕 Добро пожаловать в TeZgo Taxi!\n\n"
+            "Чтобы заказать такси, напишите адрес, откуда вас забрать.\n\n"
+            "Например:\n"
+            "Айдаркен, центр\n\n"
+            "После этого мы продолжим оформление заказа."
+        )
+
+        send_message(from_number, reply)
 
     except Exception as e:
         print("Webhook error:", e)
@@ -66,7 +63,7 @@ def send_message(to, text):
         "Content-Type": "application/json"
     }
 
-    data = {
+    payload = {
         "messaging_product": "whatsapp",
         "to": to,
         "type": "text",
@@ -75,9 +72,15 @@ def send_message(to, text):
         }
     }
 
-    requests.post(url, headers=headers, json=data, timeout=20)
+    response = requests.post(
+        url,
+        headers=headers,
+        json=payload,
+        timeout=20
+    )
+
+    print("WhatsApp response:", response.status_code, response.text)
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 10000)))
